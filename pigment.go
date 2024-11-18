@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"runtime"
 )
 
 var esc = "\x1B["
@@ -20,9 +22,11 @@ var ansiCodes = map[string]string{
 	"BgWhite": "47",
 }
 
-type StyleFunc = func(string) string
+type Style = func(string) string
 
-var styles = make(map[string]StyleFunc)
+var defaultStyle Style = func(text string) string { return text }
+
+var styleMap = make(map[string]Style)
 
 // TODO: create generator to generate all functions for all styles and add them to  struct
 func Blue(text string) string {
@@ -40,38 +44,76 @@ func BgBlack(text string) string {
 	return s + text + reset
 }
 
-func createStyle(code string) StyleFunc {
+// TODO: handle multiple codes
+func createStyle(code string) Style {
 	s := esc + code + "m"
 	return func(text string) string {
 		return s + text + reset
 	}
 }
 
-func AddStyle(name string, code string) {
-	styles[name] = createStyle(code)
+func Add(name string, code string) Style {
+	styleMap[name] = createStyle(code)
+	return styleMap[name]
 }
 
-func Custom(name string) StyleFunc {
-	return styles[name]
+func Apply(name string) Style {
+	s, ok := styleMap[name]
+
+	if !ok {
+		log.Printf("Style '%s' is not defined. Please define it using 'pigment.Add' before applying it. Applying default styling.", name)
+
+		// TODO: conditional stack tracing based on PIGMENT_STACK_TRACE=true
+		// make it false by default
+		buf := make([]byte, 1024)
+		n := runtime.Stack(buf, false)
+		log.Printf("Stack trace:\n%s", buf[:n])
+
+		return defaultStyle
+	}
+	return s
+}
+
+func Mix(name string, styles ...Style) Style {
+	mixed := func(text string) string {
+		for _, style := range styles {
+			text = style(text)
+		}
+		return text
+	}
+
+	if name != "" {
+		styleMap[name] = mixed
+	}
+
+	return mixed
 }
 
 func main() {
 	fmt.Println(Blue("some blue text here"))
 
-	AddStyle("green", "32")
-	AddStyle("red", "31")
+	Add("green", "32")
 
-	fmt.Println(Custom("green")("some green text here"))
+	fmt.Println(Apply("green")("some green text here"))
 
-	fmt.Println(Blue("Hello") + " World " + Custom("red")("!!!!"))
+	red := Add("red", "31")
+	fmt.Println(red("some red text here"))
 
-	fmt.Println(Blue("Hello" + Custom("red")("substring?") + "World"))
+	fmt.Println(Blue("Hello") + " World " + Apply("red")("!!!!"))
 
-	x := fmt.Sprintf("My Name is %s, %s, "+Custom("red")("%s"), "what", Blue("fml"), "hello world")
+	fmt.Println(Blue("Hello" + Apply("red")("substring?") + "World"))
+
+	x := fmt.Sprintf("My Name is %s, %s, "+Apply("red")("%s"), "what", Blue("fml"), "hello world")
 	fmt.Println(x)
 
 	fmt.Println(Blue(BgBlack(Bold("some blue bold text on black background"))))
 
-	green := Custom("green")
+	green := Apply("green")
 	fmt.Println(green("some green text"))
+	fmt.Println("\x1B[30;31;32;43;44msomethingggggg" + reset)
+
+	BlueBgBlackBold := Mix("", Blue, BgBlack, Bold)
+	fmt.Println(BlueBgBlackBold("the mix text here"))
+
+	fmt.Println(Apply("BlueBgBlackBold")("the mix text there"))
 }
