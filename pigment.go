@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"strings"
 )
 
 var esc = "\x1B["
@@ -28,7 +29,7 @@ var defaultStyle Style = func(text string) string { return text }
 
 var styleMap = make(map[string]Style)
 
-// TODO: create generator to generate all functions for all styles and add them to  struct
+// TODO: create generator to generate all functions for all styles and add them to struct
 func Blue(text string) string {
 	s := esc + ansiCodes["Blue"] + "m"
 	return s + text + reset
@@ -44,16 +45,16 @@ func BgBlack(text string) string {
 	return s + text + reset
 }
 
-// TODO: handle multiple codes
-func createStyle(code string) Style {
-	s := esc + code + "m"
+func createStyle(codes ...string) Style {
+	s := esc + strings.Join(codes, ";") + "m"
+
 	return func(text string) string {
 		return s + text + reset
 	}
 }
 
-func Add(name string, code string) Style {
-	styleMap[name] = createStyle(code)
+func Add(name string, codes ...string) Style {
+	styleMap[name] = createStyle(codes...)
 	return styleMap[name]
 }
 
@@ -74,6 +75,7 @@ func Apply(name string) Style {
 	return s
 }
 
+// TODO: accept interface{} and check for type string to add name, type Style for styling
 func Mix(name string, styles ...Style) Style {
 	mixed := func(text string) string {
 		for _, style := range styles {
@@ -112,8 +114,12 @@ func main() {
 	fmt.Println(green("some green text"))
 	fmt.Println("\x1B[30;31;32;43;44msomethingggggg" + reset)
 
-	BlueBgBlackBold := Mix("", Blue, BgBlack, Bold)
+	BlueBgBlackBold := Mix("", Blue, BgBlack, Bold, func(text string) string { return text + "fml" })
 	fmt.Println(BlueBgBlackBold("the mix text here"))
 
+	fmt.Println("\nmissing style case:")
 	fmt.Println(Apply("BlueBgBlackBold")("the mix text there"))
+
+	BlueBgBlackBoldX := Add("BlueBgBlackBold", "34", "40", "1")
+	fmt.Println(BlueBgBlackBoldX("multi code style"))
 }
