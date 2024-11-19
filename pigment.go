@@ -58,7 +58,7 @@ func Add(name string, codes ...string) Style {
 	return styleMap[name]
 }
 
-func Apply(name string) Style {
+func Custom(name string) Style {
 	s, ok := styleMap[name]
 
 	if !ok {
@@ -96,21 +96,21 @@ func main() {
 
 	Add("green", "32")
 
-	fmt.Println(Apply("green")("some green text here"))
+	fmt.Println(Custom("green")("some green text here"))
 
 	red := Add("red", "31")
 	fmt.Println(red("some red text here"))
 
-	fmt.Println(Blue("Hello") + " World " + Apply("red")("!!!!"))
+	fmt.Println(Blue("Hello") + " World " + Custom("red")("!!!!"))
 
-	fmt.Println(Blue("Hello" + Apply("red")("substring?") + "World"))
+	fmt.Println(Blue("Hello" + Custom("red")("substring?") + "World"))
 
-	x := fmt.Sprintf("My Name is %s, %s, "+Apply("red")("%s"), "what", Blue("fml"), "hello world")
+	x := fmt.Sprintf("My Name is %s, %s, "+Custom("red")("%s"), "what", Blue("fml"), "hello world")
 	fmt.Println(x)
 
 	fmt.Println(Blue(BgBlack(Bold("some blue bold text on black background"))))
 
-	green := Apply("green")
+	green := Custom("green")
 	fmt.Println(green("some green text"))
 	fmt.Println("\x1B[30;31;32;43;44msomethingggggg" + reset)
 
@@ -118,7 +118,7 @@ func main() {
 	fmt.Println(BlueBgBlackBold("the mix text here"))
 
 	fmt.Println("\nmissing style case:")
-	fmt.Println(Apply("BlueBgBlackBold")("the mix text there"))
+	fmt.Println(Custom("BlueBgBlackBold")("the mix text there"))
 
 	BlueBgBlackBoldX := Add("BlueBgBlackBold", "34", "40", "1")
 	fmt.Println(BlueBgBlackBoldX("multi code style"))
